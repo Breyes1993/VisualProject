@@ -6,24 +6,25 @@ Our team will create a graph visualizing the average of the top leading causes o
 Dataset link:
 https://data.cdc.gov/NCHS/NCHS-Age-adjusted-Death-Rates-for-Selected-Major-C/6rkc-nb2q/data
 
- 
+ <img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG> 
+
 
 Inspiring Visualizations:
 1)
 
-<img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG> 
-
-
-
-
-
+<https://github.com/Breyes1993/VisualProject/blob/master/Images/Timeline2.png>
 
 2) 
+
+<https://github.com/Breyes1993/VisualProject/blob/master/Images/crossfilter.png>
  
 3) 
  
+<https://github.com/Breyes1993/VisualProject/blob/master/Images/timeline.png>
 
 Dashboard Sketch:
+ 
+ <https://github.com/Breyes1993/VisualProject/blob/master/Images/Dashboard.PNG>
  
 Github Repository:
 https://github.com/Breyes1993/VisualProject.git 
