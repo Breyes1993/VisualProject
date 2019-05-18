@@ -10,8 +10,9 @@ https://data.cdc.gov/NCHS/NCHS-Age-adjusted-Death-Rates-for-Selected-Major-C/6rk
 
 Inspiring Visualizations:
 1)
- 
-![](Images/meta data .PNG)
+
+<img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG> 
+![](https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG)
 
 
 
