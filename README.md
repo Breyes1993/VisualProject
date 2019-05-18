@@ -12,19 +12,19 @@ https://data.cdc.gov/NCHS/NCHS-Age-adjusted-Death-Rates-for-Selected-Major-C/6rk
 Inspiring Visualizations:
 1)
 
-<https://github.com/Breyes1993/VisualProject/blob/master/Images/Timeline2.png>
+<img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/Timeline2.png>
 
 2) 
 
-<https://github.com/Breyes1993/VisualProject/blob/master/Images/crossfilter.png>
+<img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/crossfilter.png>
  
 3) 
  
-<https://github.com/Breyes1993/VisualProject/blob/master/Images/timeline.png>
+<img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/timeline.png>
 
 Dashboard Sketch:
  
- <https://github.com/Breyes1993/VisualProject/blob/master/Images/Dashboard.PNG>
+ <img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/Dashboard.PNG>
  
 Github Repository:
 https://github.com/Breyes1993/VisualProject.git 
