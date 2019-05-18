@@ -12,7 +12,6 @@ Inspiring Visualizations:
 1)
 
 <img src = https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG> 
-![](https://github.com/Breyes1993/VisualProject/blob/master/Images/meta%20data%20.PNG)
 
 
 
