@@ -11,7 +11,7 @@ https://data.cdc.gov/NCHS/NCHS-Age-adjusted-Death-Rates-for-Selected-Major-C/6rk
 Inspiring Visualizations:
 1)
  
-[Images/meta data .PNG]
+![](Images/meta data .PNG)
 
 
 
