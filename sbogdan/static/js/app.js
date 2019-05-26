@@ -21,7 +21,7 @@ var svg = d3
 
 
 var chartGroup = svg.append("g")
-  .attr("transform", `translate(${chartMargin.left}, ${chartMargin.bottom})`);
+  .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
 
 // Read Data
 d3.csv("/static/data/data.csv", data => {
@@ -42,7 +42,8 @@ d3.csv("/static/data/data.csv", data => {
   var xScaleOrdinal = d3.scaleBand()
     .domain(data.map(d => d.Year))
     .range([0, chartWidth])
-    .paddingInner(.05);
+    .paddingInner(.05)
+    .paddingOuter(.05);
 
   var xScaleDate = d3.scaleTime().
     domain([new Date(`${xExtent[0]}`), new Date(`${xExtent[1]}`)]).
@@ -53,45 +54,88 @@ d3.csv("/static/data/data.csv", data => {
     range([chartHeight, 0]);
 
   var yScaleStacked = d3.scaleLinear().
-    domain(d3.extent(flatData, d => +d.total)).
-    range([chartHeight -190, 0]);
+    domain(d3.extent([0, 1454.9])).clamp(false).
+    // domain(d3.extent(flatData, d => +d.total)).
+
+    range([660 - 0, 0]);
+
+    console.log("Y extent: " + d3.extent(flatData, d => +d.total))
+
 
   // Add axes to chart
   var bottomAxis = d3.axisBottom().scale(xScaleOrdinal);
   var leftAxis = d3.axisLeft().scale(yScaleStacked);
 
-  var xAxis = chartGroup.append("g").
-    attr("transform", `translate(0, ${chartHeight})`).
-    call(bottomAxis);
+  var xAxis = chartGroup.append("g")
+    .attr("transform", `translate(0, ${chartHeight})`)
+    // .selectAll("text")
+    // .style("text-anchor", "end")
+    // .attr("dx", "-.8em")
+    // .attr("dy", ".15em")
+    // .attr("transform", "rotate(0)")
+    .call(bottomAxis);
 
   var y_axis = chartGroup.append("g")
     .call(leftAxis);
 
-  var color = d3.scaleOrdinal(0)
-    .domain(causeKeys)
-    .range(['red', 'green', 'blue', 'yellow', 'black']);
+  // var color = d3.scaleOrdinal()
+  //   .domain(causeKeys)
+  //   .range(d3.schemeGnBu[causeKeys.length]);
+
+  var color =  d3.scaleOrdinal(d3.schemePRGn[5]);
+
+
 
   //Build Chart
-
   var stack = d3.stack()
     .keys(causeKeys);
+
+    console.log("Chart height: " + chartHeight)
+    for (i = -20; i < 1600; i += 10) {
+      console.log("y(" + i + ") = " + yScaleStacked(i))
+    }
 
   chartGroup.selectAll(".bar")
     .data(stack(flatData))
     .enter().append("g")
     .attr("class", "bar")
     .attr("fill", d => color(d.key))
+    // .attr("z1", d => console.log(d.key))
     .selectAll("rect")
     .data(d => d)
     .enter().append("rect")
     .attr("x", d => xScaleOrdinal(d.data.Year))
-    // .attr("z", d => console.log(d[1]))
+    // .attr("z", (d,i) => console.log(i + ": " + 
+    //   d[0] + " " + yScaleStacked(d[0]) + " " + d[1] + " " + yScaleStacked(d[1])))
     .attr("y", d => yScaleStacked(d[1]))
     .attr("height", d => yScaleStacked(d[0]) - yScaleStacked(d[1]))
     .attr("width", xScaleOrdinal.bandwidth());
 
+    
+    
+  var legend = chartGroup.selectAll(".legend")
+  .data(causeKeys.reverse())
+  .enter().append("g")
+  .attr("class", "legend")
+  .attr("transform", (d, i) => "translate(0," + i * 20 + ")")
+  .style("font", "14px sans-serif");
+
+  legend.append("rect")
+  .attr("x", 40)
+  .attr("width", 14)
+  .attr("height", 14)
+  .attr("fill", color);
+
+  legend.append("text")
+  .attr("x", 60)
+  .attr("y", 9)
+  .attr("dy", ".20em")
+  .attr("text-anchor", "begin")
+  .text(d => d);
+
+
   var temp = stack(flatData);
-  console.log(temp[4]);
+  console.log(temp);
   // console.log(temp[1]);
 
 });
@@ -117,7 +161,7 @@ function flattenData(data) {
       "Stroke": strokeRate,
       "Influenza and Pneumonia": fluRate,
       "Accidents": accidentRate,
-      "HeartRate": heartRate,
+      "Heart Disease": heartRate,
       "Cancer": cancerRate
     })
 
@@ -125,16 +169,3 @@ function flattenData(data) {
   return flatData;
 }
 
-d3.csv("/static/data/data1.csv", type, function(error, data) {
-
-  data.sort(function(a, b) { return b.total - a.total; });
-  // console.log(data.columns.slice(1));
-
-
-})
-
-function type(d, i, columns) {
-  for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
-  d.total = t;
-  return d;
-}
