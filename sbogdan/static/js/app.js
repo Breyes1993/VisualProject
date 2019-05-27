@@ -1,7 +1,7 @@
 // Set up Chart Area
 
 var svgWidth = 2800;
-var svgHeight = 700;
+var svgHeight = 600;
 
 var chartMargin = {
   top: 20,
@@ -13,12 +13,10 @@ var chartMargin = {
 var chartWidth = svgWidth - chartMargin.left - chartMargin.right;
 var chartHeight = svgHeight - chartMargin.top - chartMargin.bottom;
 
-var svg = d3
-  .select("#stackedChart")
+var svg = d3.select("#stackedChart")
   .append("svg")
   .attr("height", svgHeight)
   .attr("width", svgWidth);
-
 
 var chartGroup = svg.append("g")
   .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
@@ -27,14 +25,14 @@ var chartGroup = svg.append("g")
 d3.csv("/static/data/data.csv", data => {
 
   // Transform data to one row per year
-  var flatData = flattenData(data);
+  var flatData = transposeData(data);
 
   // Get all keys for causes of death
   var causeKeys = Object.keys(flatData[0]).filter(d => d != "Year");
 
   // Calculate total deaths for each year for stacked bar chart
   flatData.forEach(d =>
-    d.total = d3.sum(causeKeys, k => +d[k]))
+    d.total = d3.sum(causeKeys, k => +d[k]));
 
   // Configure scales for grouped and stacked charts
   var xExtent = d3.extent(data, d => +d.Year);
@@ -43,24 +41,26 @@ d3.csv("/static/data/data.csv", data => {
     .domain(data.map(d => d.Year))
     .range([0, chartWidth])
     .paddingInner(.05)
+    .paddingOuter(.1);
+
+  var xScaleGrouped = d3.scaleBand()
+    .domain(causeKeys)
+    .range([0,xScaleOrdinal.bandwidth()])
+    .paddingInner(.05)
     .paddingOuter(.05);
 
-  var xScaleDate = d3.scaleTime().
-    domain([new Date(`${xExtent[0]}`), new Date(`${xExtent[1]}`)]).
-    range(0, chartWidth);
+    console.log(xScaleOrdinal.bandwidth())
+  // var xScaleDate = d3.scaleTime().
+  //   domain([new Date(`${xExtent[0]}`), new Date(`${xExtent[1]}`)]).
+  //   range(0, chartWidth);
 
-  var yScaleGrouped = d3.scaleLinear().
-    domain(d3.extent(data, d => +d.DeathRate)).
-    range([chartHeight, 0]);
+  var yScaleGrouped = d3.scaleLinear()
+    .domain(d3.extent(data, d => +d.DeathRate))
+    .range([chartHeight, 0]);
 
-  var yScaleStacked = d3.scaleLinear().
-    domain(d3.extent([0, 1454.9])).clamp(false).
-    // domain(d3.extent(flatData, d => +d.total)).
-
-    range([660 - 0, 0]);
-
-    console.log("Y extent: " + d3.extent(flatData, d => +d.total))
-
+  var yScaleStacked = d3.scaleLinear()
+    .domain(d3.extent([0, d3.max(flatData, d => d.total)]))
+    .range([chartHeight, 0]);
 
   // Add axes to chart
   var bottomAxis = d3.axisBottom().scale(xScaleOrdinal);
@@ -78,71 +78,97 @@ d3.csv("/static/data/data.csv", data => {
   var y_axis = chartGroup.append("g")
     .call(leftAxis);
 
-  // var color = d3.scaleOrdinal()
-  //   .domain(causeKeys)
-  //   .range(d3.schemeGnBu[causeKeys.length]);
-
-  var color =  d3.scaleOrdinal(d3.schemePRGn[5]);
+  var color = d3.scaleOrdinal(d3.schemeSpectral[causeKeys.length]);
 
 
-
-  //Build Chart
-  var stack = d3.stack()
-    .keys(causeKeys);
-
-    console.log("Chart height: " + chartHeight)
-    for (i = -20; i < 1600; i += 10) {
-      console.log("y(" + i + ") = " + yScaleStacked(i))
-    }
+  //Build stacked chart
+  var stack = d3.stack().keys(causeKeys);
 
   chartGroup.selectAll(".bar")
     .data(stack(flatData))
     .enter().append("g")
     .attr("class", "bar")
     .attr("fill", d => color(d.key))
-    // .attr("z1", d => console.log(d.key))
     .selectAll("rect")
     .data(d => d)
     .enter().append("rect")
     .attr("x", d => xScaleOrdinal(d.data.Year))
-    // .attr("z", (d,i) => console.log(i + ": " + 
-    //   d[0] + " " + yScaleStacked(d[0]) + " " + d[1] + " " + yScaleStacked(d[1])))
     .attr("y", d => yScaleStacked(d[1]))
     .attr("height", d => yScaleStacked(d[0]) - yScaleStacked(d[1]))
-    .attr("width", xScaleOrdinal.bandwidth());
+    .attr("width", xScaleOrdinal.bandwidth())
+    .on("mouseover", d => { tooltip.style("display", "block"); console.log("mouse over");})
+    .on("mouseout", function() { tooltip.style("display", "none"); })
+    .on("mousemove", function(d) {
+      var xPosition = d3.mouse(this)[0] - 15;
+      var yPosition = d3.mouse(this)[1] - 25;
+      tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+      tooltip.select("text").text("something");
+    });
+
+    // Build grouped chart
 
     
-    
+    // chartGroup.append("g")
+    // .selectAll("g")
+    // .data(flatData)
+    // .enter().append("g")
+    // .attr("class", "bar")
+    // // .attr("transform", d => "translate(" + (xScaleOrdinal(d.Year) + xScaleOrdinal.bandwidth()/2) + ",0)")
+    // .attr("transform", d => "translate(" + (xScaleOrdinal(d.Year)  + ",0)"))
+    // .attr("z", d => console.log("year X " + xScaleOrdinal(d.Year)))
+    // .selectAll("rect")
+    // .data(function(d) { return causeKeys.map(function(key) { return {key: key, value: d[key]}; }); })
+    // .enter().append("rect")
+    //   .attr("x", d => xScaleGrouped(d.key))
+    //   .attr("y", d => yScaleGrouped(d.value))
+    //   .attr("width", xScaleGrouped.bandwidth())
+    //   .attr("height", d => chartHeight - yScaleGrouped(d.value))
+    //   .attr("fill", d => color(d.key));
+
+
   var legend = chartGroup.selectAll(".legend")
-  .data(causeKeys.reverse())
-  .enter().append("g")
-  .attr("class", "legend")
-  .attr("transform", (d, i) => "translate(0," + i * 20 + ")")
-  .style("font", "14px sans-serif");
+    .data(causeKeys.reverse())
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", (d, i) => "translate(0," + i * 20 + ")")
+    .style("font", "14px sans-serif");
 
   legend.append("rect")
-  .attr("x", 40)
-  .attr("width", 14)
-  .attr("height", 14)
-  .attr("fill", color);
+    .attr("x", 40)
+    .attr("width", 14)
+    .attr("height", 14)
+    .attr("fill", color);
 
   legend.append("text")
-  .attr("x", 60)
-  .attr("y", 9)
-  .attr("dy", ".20em")
-  .attr("text-anchor", "begin")
-  .text(d => d);
+    .attr("x", 60)
+    .attr("y", 9)
+    .attr("dy", ".20em")
+    .attr("text-anchor", "begin")
+    .text(d => d);
 
+  var tooltip = svg.append("g")
+    .attr("class", "tooltip")
+    .style("display", "none");
+      
+  tooltip.append("rect")
+    .attr("width", 30)
+    .attr("height", 20)
+    .attr("fill", "white")
+    .style("opacity", 0.5);
+  
+  tooltip.append("text")
+    .attr("x", 15)
+    .attr("dy", "1.2em")
+    .style("text-anchor", "middle")
+    .attr("font-size", "12px")
+    .attr("font-weight", "bold");
+  
 
-  var temp = stack(flatData);
-  console.log(temp);
-  // console.log(temp[1]);
-
+  
 });
 
 
-
-function flattenData(data) {
+function transposeData(data) {
   var yearLimits = d3.extent(data, d => d.Year);
   var flatData = [];
 
@@ -163,8 +189,7 @@ function flattenData(data) {
       "Accidents": accidentRate,
       "Heart Disease": heartRate,
       "Cancer": cancerRate
-    })
-
+    });
   }
   return flatData;
 }
