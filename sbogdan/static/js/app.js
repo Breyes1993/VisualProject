@@ -4,7 +4,7 @@ var svgWidth = 3800;
 var svgHeight = 600;
 
 var chartMargin = {
-  top: 20,
+  top: 75,
   right: 20,
   bottom: 20,
   left: 40
@@ -21,116 +21,115 @@ var svg = d3.select("#stackedChart")
 var chartGroup = svg.append("g")
   .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
 
+var chartGroup2 = svg.append("g")
+  .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
+
 
 // Read Data
-d3.csv("/static/data/data.csv", data => {
+d3.csv("static/data/data.csv", data => {
 
   // Transform data to one row per year
   var flatData = transposeData(data);
 
   // Get all keys for causes of death
   var causeKeys = Object.keys(flatData[0]).filter(d => d != "Year");
+  // console.log(flatData)
 
   // Calculate total deaths for each year for stacked bar chart
   flatData.forEach(d =>
     d.total = d3.sum(causeKeys, k => +d[k]));
 
   // Configure scales for grouped and stacked charts
-  var xExtent = d3.extent(data, d => +d.Year);
 
-  var xScaleOrdinal = d3.scaleBand()
+  // Scale band for years
+  var xScaleYears = d3.scaleBand()
     .domain(data.map(d => d.Year))
     .range([0, chartWidth])
-    .paddingInner(.05)
+    .paddingInner(.1)
     .paddingOuter(.1);
 
-  var xScaleGrouped = d3.scaleBand()
+  // Scale band for causes (for within each year band)
+  var xScaleCauses = d3.scaleBand()
     .domain(causeKeys)
-    .range([0, xScaleOrdinal.bandwidth()])
+    .range([0, xScaleYears.bandwidth()])
     .paddingInner(.05)
     .paddingOuter(.05);
 
+  // y scale for grouped bar chart
   var yScaleGrouped = d3.scaleLinear()
     .domain([0, d3.max(data, d => +d.DeathRate)])
     .range([chartHeight, 0]);
 
+  // y scale for stacked bar chart
   var yScaleStacked = d3.scaleLinear()
     .domain(d3.extent([0, d3.max(flatData, d => d.total)]))
     .range([chartHeight, 0]);
 
-  // Add axes to chart
-  var bottomAxis = d3.axisBottom().scale(xScaleOrdinal);
-  var leftAxis = d3.axisLeft().scale(yScaleStacked);
+  // Add axes to chart, using y scale for grouped bar chart which
+  // is initially displayed
+  var bottomAxis = d3.axisBottom().scale(xScaleYears);
+  var leftGroupedAxis = d3.axisLeft().scale(yScaleGrouped); 
+  var leftStackedAxis = d3.axisLeft().scale(yScaleStacked);
 
-  var xAxis = chartGroup.append("g")
+  var x_axis = chartGroup.append("g")
     .attr("transform", `translate(0, ${chartHeight})`)
-    // .selectAll("text")
-    // .style("text-anchor", "end")
-    // .attr("dx", "-.8em")
-    // .attr("dy", ".15em")
-    // .attr("transform", "rotate(0)")
     .call(bottomAxis);
 
   var y_axis = chartGroup.append("g")
     .attr("class", "yAxis")
-    .call(leftAxis);
+    .call(leftGroupedAxis);
 
+  // Scale for bar chart color fills
   var color = d3.scaleOrdinal(d3.schemeSpectral[causeKeys.length]);
+  color = d3.scaleOrdinal(d3.schemeSet1)
 
-
-  //Build stacked chart
+  //Build stacked chart with initial visibility set to none
   var stack = d3.stack().keys(causeKeys);
 
-  // chartGroup.selectAll(".bar")
-  //   .data(stack(flatData))
-  //   .enter().append("g")
-  //   .attr("class", "bar")
-  //   .attr("fill", d => color(d.key))
-  //   .selectAll("rect")
-  //   .data(d => d)
-  //   .enter().append("rect")
-  //   .attr("x", d => xScaleOrdinal(d.data.Year))
-  //   .attr("y", d => yScaleStacked(d[1]))
-  //   .attr("height", d => yScaleStacked(d[0]) - yScaleStacked(d[1]))
-  //   .attr("width", xScaleOrdinal.bandwidth())
-  //   .on("mouseover", d => { tooltip.style("display", "block"); console.log("mouse over");})
-  //   .on("mouseout", function() { tooltip.style("display", "none"); })
-  //   .on("mousemove", function(d) {
-  //     var xPosition = d3.mouse(this)[0] - 15;
-  //     var yPosition = d3.mouse(this)[1] - 25;
-  //     tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
-  //     tooltip.select("text").text("something");
-  //   });
+  var stackedChart = chartGroup2.selectAll(".bar")
+    .data(stack(flatData))
+    .enter().append("g")
+    .attr("class", "bar")
+    .attr("fill", d => color(d.key))
+    .selectAll("rect")
+    .data(d => d)
+      .enter().append("rect")
+      .attr("x", d => xScaleYears(d.data.Year))
+      .attr("y", d => yScaleStacked(d[1]))
+      .attr("height", d => yScaleStacked(d[0]) - yScaleStacked(d[1]))
+      .attr("width", xScaleYears.bandwidth())
+      .style("opacity", 0)
 
 
-  // console.log(d3.max(flatData, d => d3.max(causeKeys, key =>  {d[key]; console.log(key)})));
-  // console.log(flatData.map(d => causeKeys.map(key => `{key: ${key}, value: ${d[key]}}`)))
-
-  // Build grouped chart
-
-
-  chartGroup.append("g")
+  // Build grouped chart with intitial visibitlity set to on
+  var groupedChart = chartGroup.append("g")
     .selectAll("g")
     .data(flatData)
     .enter().append("g")
     .attr("class", "bar")
-    .attr("transform", d => "translate(" + (xScaleOrdinal(d.Year) + ",0)"))
+    .attr("transform", d => "translate(" + (xScaleYears(d.Year) + ",0)"))
     .selectAll("rect")
     .data(d => causeKeys.map(key => ({ key: key, value: d[key] })))
-    .enter().append("rect")
-    .attr("x", d => xScaleGrouped(d.key))
-    .attr("y", d => yScaleGrouped(d.value))
-    .attr("width", xScaleGrouped.bandwidth())
-    .attr("height", d => chartHeight - yScaleGrouped(d.value))
-    .attr("fill", d => color(d.key));
+      .enter().append("rect")
+      .attr("x", d => xScaleCauses(d.key))
+      .attr("y", d => yScaleGrouped(d.value))
+      .attr("width", xScaleCauses.bandwidth())
+      .attr("height", d => chartHeight - yScaleGrouped(d.value))
+      .attr("fill", d => color(d.key))
+      .style("opacity", 1);
 
+      
+  // Create legend used for both bar charts
+
+  // Reverse order of keys to use in legend to display
+  // in proper order
+  var reversedkeys = causeKeys.slice().reverse();
 
   var legend = chartGroup.selectAll(".legend")
-    .data(causeKeys.reverse())
+    .data(reversedkeys)
     .enter().append("g")
     .attr("class", "legend")
-    .attr("transform", (d, i) => "translate(0," + i * 20 + ")")
-    .style("font", "14px sans-serif");
+    .attr("transform", (d, i) => "translate(0," + (i * 20 - 70) + ")")
 
   legend.append("rect")
     .attr("x", 40)
@@ -148,80 +147,126 @@ d3.csv("/static/data/data.csv", data => {
     .attr("text-anchor", "begin")
     .text(d => d);
 
-  var tooltip = svg.append("g")
-    .attr("class", "tooltip")
-    .style("display", "none");
 
-  tooltip.append("rect")
-    .attr("width", 30)
-    .attr("height", 20)
-    .attr("fill", "white")
-    .style("opacity", 0.5);
+  // Set function to switch between grouped and stacked bar charts
+  // based on user selection of radio buttons
+  const buttons = d3.selectAll('input').on('change', function (d) { 
+    if (this.value == "grouped") {
 
-  tooltip.append("text")
-    .attr("x", 15)
-    .attr("dy", "1.2em")
-    .style("text-anchor", "middle")
-    .attr("font-size", "12px")
-    .attr("font-weight", "bold");
+        // Transition view from stacked to grouped chart
+        stackedChart
+          .transition()
+          .duration(1500)
+          .style("opacity", 0);
+        groupedChart
+          .transition()
+          .duration(2000)
+          .delay(500)
+          .style("opacity", 1);
+        
+        // Transition y axis to group chart y scale
+        y_axis
+          .transition()
+          .duration(2000)
+          .call(leftGroupedAxis);
+      }
+      else {
 
+        // Transition view from grouped to stacked chart
+        groupedChart
+          .transition()
+          .duration(1500)
+          .style("opacity", 0);
+        stackedChart
+          .transition()
+          .duration(2000)
+          .delay(500)
+          .style("opacity", 1);
+        
+
+        // Transition y axis to stacked chart y scale
+        y_axis
+          .transition()
+          .duration(2000)
+          .call(leftStackedAxis);
+      }
+    });
+
+  // Array of cause keys for data that are deselected for display
   var filteredKeys = [];
 
   function updateGroupedChart(key) {
 
+    // Disable chart/legend updates if stacked chart is being displayed
+    if (d3.select('input[name="chartType"]:checked').node().value
+      == "stacked") {
+      return;
+    }
+
+    // Update list of data to filter out for display
+    // Add selected key to list if not currently in list
     if (filteredKeys.indexOf(key) == -1) {
       filteredKeys.push(key);
-      // if all bars are un-checked, reset:
+      // If all bars are deselected reset list causing chart and legend to reset
       if (filteredKeys.length == causeKeys.length) filteredKeys = [];
     }
-    // otherwise remove it:
+    // If selected key is in the list, remove it
     else {
       filteredKeys.splice(filteredKeys.indexOf(key), 1);
     };
 
-    // Create new list of active keys by reversing filteredKeys
+    // Create new list of active keys by inverting filteredKeys
     var viewableKeys = [];
-
     causeKeys.forEach(d => {
       if (filteredKeys.indexOf(d) == -1) {
         viewableKeys.push(d);
       }
     });
 
-    // Update x and y scales
-    xScaleGrouped
+    // Update x and y scales to data set up viewable bars
+    xScaleCauses
       .domain(viewableKeys)
-      .range([0, xScaleOrdinal.bandwidth()]);
 
     yScaleGrouped
       .domain([0, d3.max(flatData, d => d3.max(viewableKeys, k => +d[k]))])
 
-    var newYaxis = d3.axisLeft().scale(yScaleGrouped)
+    // Update y axis
+    leftGroupedAxis = d3.axisLeft().scale(yScaleGrouped)
 
     y_axis
       .transition()
-      .call(newYaxis)
-      .duration(2000);
+      .duration(2000)
+      .call(leftGroupedAxis);
 
+    // select all bars on chart
     var bars = chartGroup.selectAll(".bar").selectAll("rect")
-      
+
+    // If key for bar is in the filtered list remove from chart
+    // by setting height and width to 0
     bars.filter(d => filteredKeys.indexOf(d.key) > -1)
       .transition()
-      .attr("height",0)
-      .attr("width",0)     
-      .attr("y", chartHeight)
-      .duration(1000);
+      .duration(1000)
+      .attr("height", 0)
+      .attr("width", 0)
+      .attr("y", chartHeight);
 
+    // If key for bar is not in the filtered list adjust
+    // height and width for data set of viewable bars
     bars.filter(d => filteredKeys.indexOf(d.key) == -1)
       .transition()
-      .attr("x", d => xScaleGrouped(d.key))
+      .duration(500)
+      .delay(1000)
+      .attr("x", d => xScaleCauses(d.key))
+      .attr("width", xScaleCauses.bandwidth())
+      .transition()
+      .duration(800)
+      .delay(0)
       .attr("y", d => yScaleGrouped(d.value))
       .attr("height", d => chartHeight - yScaleGrouped(d.value))
-      .attr("width", xScaleGrouped.bandwidth())
-      .attr("fill", d => color(d.key))
-      .duration(2000);
-  
+      .attr("fill", d => color(d.key));
 
+    // Update legend to indicate which bars are selected/deselected
+    // for display by user selection of legend icons
     legend.selectAll("rect")
       .transition()
       .attr("fill", d => {
@@ -244,6 +289,8 @@ d3.csv("/static/data/data.csv", data => {
 });
 
 
+// Transform data from one row per data point per year
+// to all data points per year on one row
 function transposeData(data) {
   var yearLimits = d3.extent(data, d => d.Year);
   var flatData = [];
